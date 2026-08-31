@@ -310,3 +310,36 @@ button:disabled {
   0% { background-position: 200% 0; }
   100% { background-position: -200% 0; }
 }
+
+
+/* New Bulk controls */
+#bulk-header-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+.bulk-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.text-btn {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 11px;
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: 4px;
+}
+.text-btn:hover {
+  background-color: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+#bulk-empty {
+  padding-top: 40px;
+}
+

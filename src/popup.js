@@ -15,20 +15,24 @@ const UI = {
   btnDownloadAll: document.getElementById('btn-download-all'),
   btnDownloadAllText: document.getElementById('btn-download-all-text'),
   bulkProgressFill: document.getElementById('bulk-progress-fill'),
-  bulkTitle: document.getElementById('bulk-title')
+  bulkTitle: document.getElementById('bulk-title'),
+  bulkHeaderControls: document.getElementById('bulk-header-controls'),
+  btnSelectAll: document.getElementById('btn-select-all'),
+  btnDeselectAll: document.getElementById('btn-deselect-all'),
+  bulkEmpty: document.getElementById('bulk-empty'),
 };
 
 let currentState = {
   mode: 'loading',
   videoId: null,
   videoTitle: null,
+  videoUrl: null,
   bestUrl: null,
   bulkIds: [],
   selectedIds: new Set(),
   bulkTitle: ''
 };
 
-// Qualities in descending order of preference
 const QUALITIES = ['maxresdefault', 'sddefault', 'hqdefault'];
 
 document.addEventListener('DOMContentLoaded', init);
@@ -41,18 +45,16 @@ async function init() {
     const currentTab = tabs[0];
     const url = currentTab.url || "";
     
-    // Check if single video mode
-    const match = url.match(/(?:v=|shorts\/|live\/|youtu\.be\/)([\w-]{11})/i);
+    const match = url.match(/(?:v=|shorts\/|live\/|youtu\.be\/|embed\/)([\w-]{11})/i);
     
     if (match) {
-      // Single video
       currentState.mode = 'single';
       currentState.videoId = match[1];
+      currentState.videoUrl = `https://www.youtube.com/watch?v=${match[1]}`;
       let cleanTitle = currentTab.title ? currentTab.title.replace(/ - YouTube$/, '').trim() : "YouTube_Thumbnail";
       currentState.videoTitle = cleanTitle;
       await renderSingleVideo();
     } else if (url.includes('youtube.com')) {
-      // Bulk mode (Channel, Search, Home)
       currentState.mode = 'bulk';
       await renderBulkVideos(currentTab.id);
     } else {
@@ -70,6 +72,18 @@ function setupListeners() {
   UI.btnDownload.addEventListener('click', downloadSingle);
   UI.btnCopy.addEventListener('click', copySingle);
   UI.btnDownloadAll.addEventListener('click', downloadBulk);
+  UI.btnSelectAll.addEventListener('click', () => setAllSelection(true));
+  UI.btnDeselectAll.addEventListener('click', () => setAllSelection(false));
+  
+  document.addEventListener('keydown', (e) => {
+    if (currentState.mode === 'single') {
+      if (e.key === 'Enter') downloadSingle();
+      if ((e.metaKey || e.ctrlKey) && e.key === 'c') {
+        e.preventDefault();
+        copySingle();
+      }
+    }
+  });
 }
 
 function setView(viewName) {
@@ -79,14 +93,14 @@ function setView(viewName) {
   UI.bulk.classList.add('hidden');
   UI.bulkFooter.classList.add('hidden');
   document.querySelector('.logo').classList.remove('hidden');
-  UI.bulkTitle.classList.add('hidden');
+  UI.bulkHeaderControls.classList.add('hidden');
   
   if (viewName === 'single') UI.single.classList.remove('hidden');
   else if (viewName === 'bulk') {
     UI.bulk.classList.remove('hidden');
     UI.bulkFooter.classList.remove('hidden');
     document.querySelector('.logo').classList.add('hidden');
-    UI.bulkTitle.classList.remove('hidden');
+    UI.bulkHeaderControls.classList.remove('hidden');
   }
   else if (viewName === 'loading') UI.loading.classList.remove('hidden');
   else if (viewName === 'error') UI.error.classList.remove('hidden');
@@ -95,7 +109,7 @@ function setView(viewName) {
 function showError(title, subtext) {
   setView('error');
   document.getElementById('error-text').textContent = title;
-  document.querySelector('#error-state .subtext').textContent = subtext;
+  document.getElementById('error-subtext').textContent = subtext;
 }
 
 // --- SINGLE VIDEO LOGIC ---
@@ -107,11 +121,19 @@ async function renderSingleVideo() {
   setView('single');
   
   const { url, quality } = await getHighestQualityThumbnail(currentState.videoId);
+  
+  if (!url) {
+    showError("Thumbnail unavailable.", "This video might be deleted or private.");
+    return;
+  }
+  
   currentState.bestUrl = url;
   
+  // Transition effect
+  UI.singleImg.style.opacity = '0';
   UI.singleImg.src = url;
+  UI.singleImg.onload = () => { UI.singleImg.style.opacity = '1'; };
   
-  // Nice label mapping
   const labels = {
     'maxresdefault': '1080p Max',
     'sddefault': '640p SD',
@@ -121,42 +143,38 @@ async function renderSingleVideo() {
   UI.resBadge.textContent = labels[quality] || quality;
   UI.btnDownload.disabled = false;
   UI.btnCopy.disabled = false;
-  
-  // Auto-focus download
   UI.btnDownload.focus();
 }
 
 async function verifyImage(url) {
   return new Promise((resolve) => {
     const img = new Image();
+    const timeout = setTimeout(() => resolve(false), 3000);
     img.onload = () => {
-      // YouTube's grey placeholder is 120x90
-      if (img.naturalWidth === 120 && img.naturalHeight === 90) {
-        resolve(false);
-      } else {
-        resolve(true);
-      }
+      clearTimeout(timeout);
+      // Ensure it's larger than the 120x90 grey placeholder
+      resolve(img.naturalWidth > 120);
     };
-    img.onerror = () => resolve(false);
+    img.onerror = () => { clearTimeout(timeout); resolve(false); };
     img.src = url;
   });
 }
 
 async function getHighestQualityThumbnail(videoId) {
   const baseUrl = `https://i.ytimg.com/vi/${videoId}`;
-
   for (const quality of QUALITIES) {
     const url = `${baseUrl}/${quality}.jpg`;
-    const isValid = await verifyImage(url);
-    if (isValid) return { url, quality };
+    if (await verifyImage(url)) return { url, quality };
   }
-  // Absolute fallback
-  return { url: `${baseUrl}/hqdefault.jpg`, quality: 'hqdefault' };
+  // Absolute fallback check
+  const fallback = `${baseUrl}/hqdefault.jpg`;
+  if (await verifyImage(fallback)) return { url: fallback, quality: 'hqdefault' };
+  return { url: null, quality: null };
 }
 
 async function downloadSingle() {
   if (!currentState.bestUrl) return;
-  const safeFilename = currentState.videoTitle.replace(/[^a-z0-9]/gi, '_') + '.jpg';
+  const safeFilename = currentState.videoTitle.substring(0, 60).replace(/[^a-z0-9]/gi, '_') + '_' + currentState.videoId + '.jpg';
   
   chrome.downloads.download({
     url: currentState.bestUrl,
@@ -169,32 +187,60 @@ async function downloadSingle() {
   setTimeout(() => {
     UI.btnDownload.textContent = originalText;
     UI.btnDownload.classList.remove('success');
-  }, 2000);
+    window.close();
+  }, 1500);
+}
+
+// Convert JPEG to PNG blob for clipboard
+async function getPngBlobFromUrl(url) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = "Anonymous";
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = img.naturalWidth;
+      canvas.height = img.naturalHeight;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0);
+      canvas.toBlob((blob) => {
+        if (blob) resolve(blob);
+        else reject(new Error("Canvas toBlob failed"));
+      }, 'image/png');
+    };
+    img.onerror = reject;
+    img.src = url;
+  });
 }
 
 async function copySingle() {
   if (!currentState.bestUrl) return;
   try {
-    const res = await fetch(currentState.bestUrl);
-    const blob = await res.blob();
+    const pngBlob = await getPngBlobFromUrl(currentState.bestUrl);
+    
+    // Semantic Copy: Include plain text and HTML link
+    const textBlob = new Blob([currentState.videoUrl], { type: 'text/plain' });
+    const htmlStr = `<a href="${currentState.videoUrl}">${currentState.videoTitle}</a>`;
+    const htmlBlob = new Blob([htmlStr], { type: 'text/html' });
     
     await navigator.clipboard.write([
       new ClipboardItem({
-        [blob.type]: blob
+        'image/png': pngBlob,
+        'text/plain': textBlob,
+        'text/html': htmlBlob
       })
     ]);
     
-    // UI Feedback
     UI.btnCopy.style.backgroundColor = "var(--success-color)";
     UI.btnCopy.style.color = "white";
     setTimeout(() => {
-      UI.btnCopy.style.backgroundColor = "";
-      UI.btnCopy.style.color = "";
-    }, 2000);
+      window.close();
+    }, 1500);
     
   } catch (err) {
     console.error("Copy failed", err);
-    alert("Copy failed. Ensure Chrome is focused and clipboard permissions are granted.");
+    UI.btnCopy.innerHTML = `<span style="font-size:10px">Error</span>`;
+    UI.btnCopy.style.backgroundColor = "var(--error-color)";
+    UI.btnCopy.style.color = "white";
   }
 }
 
@@ -211,17 +257,22 @@ async function renderBulkVideos(tabId) {
     
     const data = results[0].result;
     if (!data || !data.ids || data.ids.length === 0) {
-      showError("No thumbnails found.", "Try scrolling down to load more content.");
+      setView('bulk');
+      UI.bulkEmpty.classList.remove('hidden');
+      UI.bulkGrid.classList.add('hidden');
+      UI.bulkHeaderControls.classList.add('hidden');
+      UI.bulkFooter.classList.add('hidden');
       return;
     }
     
-    currentState.bulkIds = data.ids.slice(0, 50); // Cap at 50 to prevent OOM/Rate limits
+    currentState.bulkIds = data.ids.slice(0, 50);
     currentState.selectedIds = new Set(currentState.bulkIds);
     currentState.bulkTitle = data.pageTitle || "YouTube";
     
-    UI.bulkTitle.textContent = `Found ${currentState.bulkIds.length}`;
-    UI.btnDownloadAllText.textContent = `Download ZIP (${currentState.selectedIds.size})`;
+    UI.bulkEmpty.classList.add('hidden');
+    UI.bulkGrid.classList.remove('hidden');
     
+    updateBulkUI();
     UI.bulkGrid.innerHTML = '';
     
     currentState.bulkIds.forEach(id => {
@@ -230,8 +281,9 @@ async function renderBulkVideos(tabId) {
       div.dataset.id = id;
       
       const img = document.createElement('img');
-      img.src = `https://i.ytimg.com/vi/${id}/hqdefault.jpg`; // Lazy fast load for grid
+      img.src = `https://i.ytimg.com/vi/${id}/hqdefault.jpg`;
       img.loading = "lazy";
+      img.draggable = true;
       
       const overlay = document.createElement('div');
       overlay.className = 'check-overlay';
@@ -241,7 +293,6 @@ async function renderBulkVideos(tabId) {
       div.appendChild(overlay);
       
       div.addEventListener('click', () => toggleSelection(id, div));
-      
       UI.bulkGrid.appendChild(div);
     });
     
@@ -252,6 +303,13 @@ async function renderBulkVideos(tabId) {
   }
 }
 
+function updateBulkUI() {
+  const count = currentState.selectedIds.size;
+  UI.bulkTitle.textContent = `Found ${currentState.bulkIds.length}`;
+  UI.btnDownloadAllText.textContent = `Download ZIP (${count})`;
+  UI.btnDownloadAll.disabled = count === 0;
+}
+
 function toggleSelection(id, element) {
   if (currentState.selectedIds.has(id)) {
     currentState.selectedIds.delete(id);
@@ -260,10 +318,18 @@ function toggleSelection(id, element) {
     currentState.selectedIds.add(id);
     element.classList.remove('deselected');
   }
-  
-  const count = currentState.selectedIds.size;
-  UI.btnDownloadAllText.textContent = `Download ZIP (${count})`;
-  UI.btnDownloadAll.disabled = count === 0;
+  updateBulkUI();
+}
+
+function setAllSelection(select) {
+  if (select) {
+    currentState.selectedIds = new Set(currentState.bulkIds);
+    document.querySelectorAll('.grid-item').forEach(el => el.classList.remove('deselected'));
+  } else {
+    currentState.selectedIds.clear();
+    document.querySelectorAll('.grid-item').forEach(el => el.classList.add('deselected'));
+  }
+  updateBulkUI();
 }
 
 async function downloadBulk() {
@@ -271,11 +337,12 @@ async function downloadBulk() {
   if (ids.length === 0) return;
   
   UI.btnDownloadAll.disabled = true;
+  UI.btnSelectAll.disabled = true;
+  UI.btnDeselectAll.disabled = true;
   
   const zip = new fflate.Zip();
   let completed = 0;
   
-  // Await zip compilation via streams
   const chunks = [];
   zip.ondata = (err, data, final) => {
     if (err) throw err;
@@ -295,27 +362,28 @@ async function downloadBulk() {
       UI.btnDownloadAll.classList.add('success');
       
       setTimeout(() => {
-        window.close(); // Close popup automatically on success
+        window.close();
       }, 1500);
     }
   };
 
-  // Process in small chunks to not hammer the browser/network
+  const safeFolderName = currentState.bulkTitle.substring(0, 40).replace(/[^a-z0-9]/gi, '_');
+
   for (let i = 0; i < ids.length; i += 5) {
     const chunk = ids.slice(i, i + 5);
     
     await Promise.all(chunk.map(async (id) => {
       try {
         const { url } = await getHighestQualityThumbnail(id);
-        const res = await fetch(url);
-        const buffer = new Uint8Array(await res.arrayBuffer());
-        
-        // Ensure valid filename
-        const filename = `thumb_${id}.jpg`;
-        const deflator = new fflate.ZipDeflate(filename);
-        zip.add(deflator);
-        deflator.push(buffer, true);
-        
+        if (url) {
+          const res = await fetch(url);
+          const buffer = new Uint8Array(await res.arrayBuffer());
+          
+          const filename = `${safeFolderName}/thumb_${id}.jpg`;
+          const deflator = new fflate.ZipDeflate(filename);
+          zip.add(deflator);
+          deflator.push(buffer, true);
+        }
       } catch (err) {
         console.error(`Failed to fetch ${id}`, err);
       }
@@ -327,6 +395,5 @@ async function downloadBulk() {
     }));
   }
   
-  // Finish ZIP
   zip.end();
 }

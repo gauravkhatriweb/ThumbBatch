@@ -2,17 +2,18 @@
 (function() {
   function extractVisibleThumbnails() {
     const ids = new Set();
-    // Target thumbnails inside the main content area, avoiding the sidebar/miniplayer
-    // ytd-rich-grid-media -> home page
-    // ytd-grid-video-renderer -> channel videos
-    // ytd-video-renderer -> search results
-    const links = document.querySelectorAll('#content ytd-rich-grid-media a#thumbnail, #content ytd-grid-video-renderer a#thumbnail, #content ytd-video-renderer a#thumbnail');
+    const links = document.querySelectorAll('a');
     
     links.forEach(link => {
-      // Only grab elements that are likely visible
-      if (link.offsetParent !== null) {
+      // Must be visible in the DOM
+      if (link.offsetParent !== null && link.href) {
+        // Match both normal watch URLs and shorts
         const match = link.href.match(/(?:v=|shorts\/)([\w-]{11})/i);
-        if (match) ids.add(match[1]);
+        // Exclude links that are just user avatars on live streams
+        const isAvatar = link.closest('yt-img-shadow') || link.querySelector('yt-img-shadow');
+        if (match && !isAvatar) {
+          ids.add(match[1]);
+        }
       }
     });
     
