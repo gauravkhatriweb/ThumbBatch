@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ThumbBatch</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div id="app">
+    <header id="header">
+      <div class="logo">ThumbBatch</div>
+      <div id="bulk-title" class="hidden">Found 0 Thumbnails</div>
+    </header>
+
+    <main id="main-content">
+      <!-- Loading State -->
+      <div id="loading-state" class="skeleton-container">
+        <div class="skeleton"></div>
+      </div>
+
+      <!-- Error State -->
+      <div id="error-state" class="hidden state-message">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <p id="error-text">No YouTube video detected.</p>
+        <span class="subtext">Navigate to a video or channel.</span>
+      </div>
+
+      <!-- Single Video UI -->
+      <div id="single-ui" class="hidden">
+        <div class="preview-container">
+          <img id="single-image" src="" alt="Thumbnail preview">
+          <div id="resolution-badge" class="pill-badge">Resolving...</div>
+        </div>
+        <div class="action-row">
+          <button id="btn-download" class="primary-btn">Download</button>
+          <button id="btn-copy" class="icon-btn" title="Copy to Clipboard">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Bulk Video UI -->
+      <div id="bulk-ui" class="hidden">
+        <div id="bulk-grid" class="grid-container">
+          <!-- Thumbnails will be injected here -->
+        </div>
+      </div>
+    </main>
+
+    <!-- Bulk Footer -->
+    <footer id="bulk-footer" class="hidden">
+      <div class="progress-bar-bg">
+        <div id="bulk-progress-fill" class="progress-bar-fill"></div>
+        <button id="btn-download-all" class="primary-btn progress-btn">
+          <span id="btn-download-all-text">Download ZIP</span>
+        </button>
+      </div>
+    </footer>
+  </div>
+
+  <script src="fflate.min.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html>

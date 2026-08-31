@@ -1,0 +1,312 @@
+:root {
+  --bg-color: #ffffff;
+  --surface-color: #f9fafb;
+  --text-primary: #111827;
+  --text-secondary: #6b7280;
+  --border-color: #e5e7eb;
+  --primary-btn: #000000;
+  --primary-btn-text: #ffffff;
+  --primary-btn-hover: #1f2937;
+  --success-color: #10b981;
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --spacing: 16px;
+  --grid-gap: 8px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg-color: #121212;
+    --surface-color: #1e1e1e;
+    --text-primary: #f9fafb;
+    --text-secondary: #9ca3af;
+    --border-color: #2c2c2c;
+    --primary-btn: #ffffff;
+    --primary-btn-text: #000000;
+    --primary-btn-hover: #e5e7eb;
+  }
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  background-color: var(--bg-color);
+  color: var(--text-primary);
+  width: 320px;
+  max-height: 480px;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+#app {
+  display: flex;
+  flex-direction: column;
+  min-height: 150px;
+}
+
+.hidden {
+  display: none !important;
+}
+
+header {
+  padding: 12px var(--spacing);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid transparent;
+}
+
+.logo {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+#bulk-title {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+main {
+  padding: var(--spacing);
+}
+
+/* Single UI */
+.preview-container {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background-color: var(--surface-color);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  margin-bottom: var(--spacing);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+#single-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.pill-badge {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  color: white;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 500;
+  pointer-events: none;
+}
+
+.action-row {
+  display: flex;
+  gap: 8px;
+}
+
+/* Buttons */
+button {
+  cursor: pointer;
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: 13px;
+  font-weight: 500;
+  transition: all 150ms ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: inherit;
+}
+
+button:active {
+  transform: scale(0.97);
+}
+
+button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.primary-btn {
+  background-color: var(--primary-btn);
+  color: var(--primary-btn-text);
+  flex-grow: 1;
+  padding: 10px;
+}
+
+.primary-btn:hover:not(:disabled) {
+  background-color: var(--primary-btn-hover);
+}
+
+.primary-btn.success {
+  background-color: var(--success-color) !important;
+  color: white !important;
+}
+
+.icon-btn {
+  background-color: var(--surface-color);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  flex-shrink: 0;
+}
+
+.icon-btn:hover {
+  background-color: var(--border-color);
+}
+
+/* Bulk UI */
+.grid-container {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--grid-gap);
+  padding-bottom: 60px; /* Space for sticky footer */
+}
+
+.grid-item {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  background-color: var(--surface-color);
+  cursor: pointer;
+  border: 1px solid var(--border-color);
+}
+
+.grid-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.grid-item .check-overlay {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  opacity: 0;
+  transition: opacity 150ms ease;
+}
+
+.grid-item:hover .check-overlay {
+  opacity: 1;
+}
+
+.grid-item.deselected img {
+  opacity: 0.4;
+}
+
+.grid-item.deselected .check-overlay {
+  opacity: 1;
+  background: transparent;
+}
+
+/* Sticky Footer for Bulk */
+#bulk-footer {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 12px var(--spacing);
+  background: var(--bg-color);
+  border-top: 1px solid var(--border-color);
+  backdrop-filter: blur(8px);
+}
+
+.progress-bar-bg {
+  position: relative;
+  width: 100%;
+  height: 38px;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background-color: var(--border-color); /* Changed to show bar progressing over it */
+}
+
+.progress-bar-fill {
+  position: absolute;
+  top: 0; left: 0; bottom: 0;
+  width: 0%;
+  background-color: var(--primary-btn);
+  transition: width 200ms ease;
+  z-index: 1;
+}
+
+.progress-btn {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: transparent !important;
+  color: var(--bg-color);
+  z-index: 2;
+  mix-blend-mode: difference;
+}
+
+@media (prefers-color-scheme: dark) {
+  .progress-bar-bg {
+    background-color: var(--border-color);
+  }
+  .progress-bar-fill {
+    background-color: var(--primary-btn);
+  }
+  .progress-btn {
+    color: var(--primary-btn-text);
+  }
+}
+
+/* States */
+.state-message {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 24px 0;
+  color: var(--text-secondary);
+}
+
+.state-message svg {
+  margin-bottom: 12px;
+}
+
+.state-message p {
+  margin: 0 0 4px 0;
+  font-weight: 500;
+  color: var(--text-primary);
+  font-size: 14px;
+}
+
+.state-message .subtext {
+  font-size: 12px;
+}
+
+.skeleton-container {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+.skeleton {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, var(--surface-color) 25%, var(--border-color) 50%, var(--surface-color) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
